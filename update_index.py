@@ -1,8 +1,9 @@
 import logging
 import os
-from piazza_api import Piazza
 from elasticsearch import Elasticsearch
 from flask import Flask
+import json
+import boto3
 app = Flask(__name__)
 
 if os.environ.get("deployment", False):
@@ -17,18 +18,27 @@ gunicorn_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 
-p = Piazza()
-p.user_login(email=app.config["PIAZZA_USER"],
-             password=app.config["PIAZZA_PASS"])
+key = app.config["AWS_ACCESS"]
+secret = app.config["AWS_SECRET"]
 
-coursePiazzaDict = {
-    "CS 4300": p.course(app.config["PIAZZA_CS4300_NID"]),
-    "INFO 1998": p.course(app.config["PIAZZA_INFO1998_NID"])
-}
+s3 = boto3.client('s3', aws_access_key_id=key, aws_secret_access_key=secret)
+s3.download_file('cs4300-data-models',
+                 'P03Data_mod_concepts.json', 'P03Data.json')
 
-for course_name, course in coursePiazzaDict.items():
-    es = Elasticsearch()
-    for post_id, post in course.get_postings():
+with open("P03Data.json") as f:
+    fromS3 = json.load(f)
+
+coursePiazzaList = [
+    "CS 4300", "INFO 1998"
+]
+es = Elasticsearch('http://18.222.65.250:9200/')
+
+for course_name in coursePiazzaList:
+    posts = fromS3[course_name]["Piazza"]
+    resources = fromS3[course_name]["Resource"]
+    index_name = course_name.replace(" ", "_").lower()
+
+    for post_id, post in posts.items():
         content = post["raw"]["history"]
         children = post["raw"]["children"]
         try:
@@ -47,15 +57,15 @@ for course_name, course in coursePiazzaDict.items():
             "followups": followups,
             "document_type": "Piazza"
         }
-        res = es.index(index="course_name", id=post_id, body=info)
-        resources = post["Resource"]
-        for post_id, post in resources.items():
-            info = {
-                "title": post["doc_name"],
-                "question": "",
-                "text": post["raw"],
-                "answer": "",
-                "followups": [],
-                "document_type": "Lecture Notes"
-            }
-            res = es.index(index="test_index", id=post_id, body=info)
+        res = es.index(index=index_name, id=post_id, body=info)
+
+    for post_id, post in resources.items():
+        info = {
+            "title": post["doc_name"],
+            "question": "",
+            "text": post["raw"],
+            "answer": "",
+            "followups": [],
+            "document_type": "Lecture Notes"
+        }
+        res = es.index(index=index_name, id=post_id, body=info)

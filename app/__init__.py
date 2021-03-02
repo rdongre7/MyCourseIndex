@@ -80,18 +80,19 @@ def search_results():
         app.logger.info("User queried: {}".format(orig_query))
         courseSelection = request.get_json()["course"]
         app.logger.info("User course: {}".format(courseSelection))
-        # Initial index population
-        es = Elasticsearch()
+        es = Elasticsearch('http://18.222.65.250:9200/')
+        index = courseSelection.replace(" ", "_").lower()
         # Search query
-        res = es.search(index=courseSelection, body={
+        res = es.search(index=index, body={
             "query": {
                 "multi_match": {
-                    "query": "machine learning",
-                    "fields": ["answer", "text", "followups"]
+                    "query": orig_query,
+                    "fields": ["title", "answer", "text", "followups"]
                 }
             },
             "highlight": {
                 "fields": {
+                    "title": {},
                     "answer": {},
                     "text": {},
                     "followups": {}
