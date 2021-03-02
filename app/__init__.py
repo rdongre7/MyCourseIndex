@@ -80,7 +80,7 @@ def search_results():
         app.logger.info("User queried: {}".format(orig_query))
         courseSelection = request.get_json()["course"]
         app.logger.info("User course: {}".format(courseSelection))
-        es = Elasticsearch('http://18.222.65.250:9200/')
+        es = Elasticsearch('http://18.191.198.23:9200/')
         index = courseSelection.replace(" ", "_").lower()
         # Search query
         res = es.search(index=index, body={

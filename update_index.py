@@ -31,7 +31,7 @@ with open("P03Data.json") as f:
 coursePiazzaList = [
     "CS 4300", "INFO 1998"
 ]
-es = Elasticsearch('http://18.222.65.250:9200/')
+es = Elasticsearch('http://18.191.198.23:9200/')
 
 for course_name in coursePiazzaList:
     posts = fromS3[course_name]["Piazza"]
