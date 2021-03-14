@@ -85,8 +85,8 @@ def search_results():
         # Search query
         res = es.search(index=index, body={
             "query": {
-                "multi_match": {
-                    "query": orig_query,
+                "query_string": {
+                    "query": "*" + orig_query + "*",
                     "fields": ["title", "answer", "text", "followups"]
                 }
             },
