@@ -86,7 +86,7 @@ def search_results():
         res = es.search(index=index, body={
             "query": {
                 "query_string": {
-                    "query": "*kardashian*",
+                    "query": "*" + orig_query + "*",
                     "fields": ["title", "question", "answer", "text", "followups"]
                 }
             },
